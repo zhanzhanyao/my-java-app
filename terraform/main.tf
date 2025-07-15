@@ -1,10 +1,10 @@
 resource "aws_instance" "example" {
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  key_name               = var.key_name
+  ami                         = var.ami_id
+  instance_type               = var.instance_type
+  key_name                    = var.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
-
+  vpc_security_group_ids      = [aws_security_group.allow_ssh_http.id]
+  user_data                   = file("${path.module}/install.sh")
 
   tags = {
     Name        = "MyJavaAppInstance"
@@ -14,7 +14,7 @@ resource "aws_instance" "example" {
 
 resource "aws_security_group" "allow_ssh_http" {
   name        = "allow_ssh_http_prometheus"
-  description = "SSH、HTTP、Prometheus"
+  description = "SSH/HTTP/Prometheus"
 
   # 允许SSH访问（端口22），生产环境建议限制CIDR
   ingress {
@@ -22,7 +22,7 @@ resource "aws_security_group" "allow_ssh_http" {
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]  # 这里建议改为你的固定IP或内网CIDR，提升安全性
+    cidr_blocks      = ["0.0.0.0/0"] # 这里建议改为你的固定IP或内网CIDR，提升安全性
     ipv6_cidr_blocks = []
     prefix_list_ids  = []
     security_groups  = []
@@ -48,7 +48,20 @@ resource "aws_security_group" "allow_ssh_http" {
     from_port        = 9090
     to_port          = 9090
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]  # 生产环境同样建议限制访问IP范围
+    cidr_blocks      = ["0.0.0.0/0"] # 生产环境同样建议限制访问IP范围
+    ipv6_cidr_blocks = []
+    prefix_list_ids  = []
+    security_groups  = []
+    self             = false
+  }
+
+  # 允许本地调试(8080)
+  ingress {
+    description      = "Local"
+    from_port        = 8080
+    to_port          = 8080
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"] # 生产环境同样建议限制访问IP范围
     ipv6_cidr_blocks = []
     prefix_list_ids  = []
     security_groups  = []
@@ -69,7 +82,7 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 
   tags = {
-    Name = "Allow SSH, HTTP, Prometheus"
+    Name        = "Allow SSH, HTTP, Prometheus"
     Environment = "Dev"
   }
 }
